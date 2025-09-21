@@ -1,0 +1,109 @@
+---
+title: Assignment 03
+author:
+  - name: Tracy Anyasi
+    affiliations:
+      - id: bu id U00345116
+        name: Boston University
+        city: Boston
+        state: MA
+number-sections: true
+date: '2024-11-21'
+format:
+  html:
+    theme: cerulean
+    toc: true
+    toc-depth: 2
+  docx: default
+  pdf: default
+date-modified: today
+date-format: long
+execute: 
+  freeze: true
+---
+
+# Load the dataset
+
+```{python}
+import pandas as pd
+import plotly.express as px
+import plotly.io as pio
+from pyspark.sql import SparkSession
+import re
+import numpy as np
+import plotly.graph_objects as go
+from pyspark.sql.functions import col, split, explode, regexp_replace, transform, when
+from pyspark.sql import functions as F
+from pyspark.sql.functions import col, monotonically_increasing_id
+
+np.random.seed(51)
+
+pio.renderers.default = "notebook"
+
+# Initialize Spark Session
+spark = SparkSession.builder.appName("LightcastData").getOrCreate()
+
+# Load Data
+df = spark.read.option("header", "true").option("inferSchema", "true").option("multiLine","true").option("escape", "\"").csv("data/lightcast_job_postings.csv")
+df.createOrReplaceTempView("job_postings")
+
+# Show Schema and Sample Data
+#print("---This is Diagnostic check, No need to print it in the final doc---")
+
+#df.printSchema() # comment this line when rendering the submission
+#df.show(5)
+
+
+```
+
+```{python}
+## Casting Salaries
+df = df.withColumn("SALARY_FROM", col("SALARY_FROM").cast("float")) \
+        .withColumn("SALARY_TO", col("SALARY_TO").cast("float")) \
+        .withColumn("SALARY", col("SALARY").cast("float")) \
+        .withColumn("MIN_YEARS_EXPERIENCE", col("MIN_YEARS_EXPERIENCE").cast("float")) \
+        .withColumn("MAX_YEARS_EXPERIENCE", col("MAX_YEARS_EXPERIENCE").cast("float")) \
+        .withColumn("EDUCATION_LEVELS_NAME",regexp_replace(col("EDUCATION_LEVELS_NAME"), r"[\n\r]", "")) \
+
+## Computing Medians
+def compute_median(sdf, col_name):
+    q = sdf.approxQuantile(col_name, [0.5], 0.01)
+    return q[0] if q else None
+
+median_from = compute_median(df, "SALARY_FROM")
+median_to = compute_median(df, "SALARY_TO")
+median_salary = compute_median(df, "SALARY")
+
+print("Medians:", median_from, median_to, median_salary)
+
+## Imput missing using the medians
+df = df.fillna({
+    "SALARY_FROM": median_from,
+    "SALARY_TO": median_to,
+    "SALARY": median_salary
+})
+
+## compute average salary
+df = df.withColumn("Average_Salary", (col("SALARY_FROM") + col("SALARY_TO"))/2)
+
+df.select("Average_Salary", "SALARY", "EDUCATION_LEVELS_NAME", "REMOTE_TYPE_NAME", "MAX_YEARS_EXPERIENCE", "LOT_V6_SPECIALIZED_OCCUPATION_NAME").show(5, truncate=False)
+
+
+## selecting required columns & exporting data/ saving to csv
+export_cols = [
+  "EDUCATION_LEVELS_NAME",
+  "REMOTE_TYPE_NAME",
+  "MAX_YEARS_EXPERIENCE",
+  "Average_Salary",
+  "LOT_V6_SPECIALIZED_OCCUPATION_NAME"
+]
+
+df_selected = df.select(*export_cols)
+
+## export
+pdf = df_selected.toPandas()
+pdf.to_csv("lightcast_cleaned.csv", index=False)
+
+print("Data cleaning complete. Row retained:", len(pdf))
+
+```
