@@ -95,6 +95,7 @@ export_cols = [
   "REMOTE_TYPE_NAME",
   "MAX_YEARS_EXPERIENCE",
   "Average_Salary",
+  "SALARY",
   "LOT_V6_SPECIALIZED_OCCUPATION_NAME"
 ]
 
