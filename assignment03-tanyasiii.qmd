@@ -150,6 +150,7 @@ fig.write_html("Q1a.html")
 #fig.write_image("Q1a.png")
 
 ```
+#Analysis: 
 
 #Question 1b - Salary Distribution by Employment Type
 ```{python}
@@ -175,3 +176,38 @@ fig.write_html("Q1b.html")
 #fig.write_image("Q1b.png")
 
 ```
+#Analysis: 
+
+#Question 2 - Salary Analysis by ONET Occupation Type
+```{python}
+#aggregate data by median salary for each occupation (saonet)
+
+saonet = pdf.groupby("LOT_OCCUPATION_NAME").agg(
+    median_salary=("SALARY", "median"),  # median salary
+    job_count=("SALARY", "count")        # number of postings
+).reset_index()
+
+fig = px.scatter(
+  saonet,
+  x="LOT_OCCUPATION_NAME",
+  y="median_salary",
+  size="job_count",
+  size_max=60,
+  color_continuous_scale=["plasma"],
+  title="Salary Analysis by Occupation"
+)
+
+fig.update_layout(
+  font_family="Times New Roman",
+  title_font_size=16,
+  xaxis_title="Occupation",
+  yaxis_title="Median Salary",
+  xaxis_tickangle=45,
+)
+
+fig.show()
+fig.write_html("Q2.html")
+#fig.write_image("Q2.png")
+
+```
+#Analysis: 
