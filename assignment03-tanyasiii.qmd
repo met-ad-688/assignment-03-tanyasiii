@@ -178,7 +178,7 @@ fig.write_html("Q1b.html")
 ```
 #Analysis: 
 
-#Question 2 - Salary Analysis by ONET Occupation Type
+<!-- #Question 2 - Salary Analysis by ONET Occupation Type
 ```{python}
 #aggregate data by median salary for each occupation (saonet)
 
@@ -210,4 +210,118 @@ fig.write_html("Q2.html")
 #fig.write_image("Q2.png")
 
 ```
-#Analysis: 
+#Analysis:  -->
+
+
+
+
+#Question 2 - Salary Analysis by ONET Occupation Type
+```{python}
+
+saonet = spark.sql("""
+    SELECT
+      LOT_OCCUPATION_NAME AS Occupation_Name,
+      PERCENTILE(SALARY, 0.5) AS Median_Salary,
+      COUNT(*) AS Job_Postings
+    FROM job_postings
+    GROUP BY LOT_OCCUPATION_NAME
+    ORDER BY Job_Postings DESC
+    LIMIT 10
+"""
+)
+
+saonet_pd = saonet.toPandas()
+saonet_pd.head()
+
+
+fig = px.scatter(
+  saonet_pd,
+  x="Occupation_Name",
+  y="Median_Salary",
+  size="Job_Postings",
+  title="Salary Analysis by LOT Occupation Type (Bubble Chart)",
+  labels={
+    "LOT_OCCUPATION_NAME": "LOT Occupation",
+    "Median_Salary": "Median Salary",
+    "Job_Postings": "Number of Job Postings"
+  },
+  hover_name="Occupation_Name",
+  size_max=60,
+  width=1000,
+  height=600,
+  color="Job_Postings",
+  color_continuous_scale="Plasma"
+)
+
+fig.update_layout(
+  font_family="Times New Roman",
+  font_size=16,
+  title_font_size=20,
+  xaxis_title="LOT Occupation",
+  yaxis_title="Median Salary",
+  xaxis=dict(
+    tickangle=-45,
+    showline=True,
+    linecolor="black"
+  ),
+  yaxis=dict(
+    showline=True,
+    linecolor="black"
+  )
+)
+
+fig.show()
+fig.write_html("Q2a.html")
+```
+
+
+
+
+
+
+<!-- #Question 3
+```{python}
+import pandas as pd
+import plotly.express as px
+
+# Map education levels into groups
+edu_mapping = {
+    'GED': 'Associate or Lower',
+    'Associate': 'Associate or Lower',
+    'No Education Listed': 'Associate or Lower',
+    "Bachelor's": 'Bachelor',
+    "Master's": 'Master',
+    'PhD': 'PhD',
+    'Doctorate': 'PhD',
+    'Professional Degree': 'PhD'
+}
+
+df['EDU_GROUP'] = df['EDU_GROUP'].map(edu_mapping)
+
+# Plot scatter for each education group
+for edu in df['EDU_GROUP'].unique():
+    subset = df[df['EDU_GROUP'] == edu]
+    
+    fig = px.scatter(
+        subset,
+        x='MAX_YEARS_EXPERIENCE',
+        y='AVERAGE_SALARY',
+        color='LOT_V6_SPECIALIZED_OCCUPATION_NAME',
+        hover_data=['LOT_V6_SPECIALIZED_OCCUPATION_NAME', 'MAX_YEARS_EXPERIENCE', 'AVERAGE_SALARY'],
+        title=f'Salary vs Experience for {edu} Degrees',
+        labels={
+            'MAX_YEARS_EXPERIENCE': 'Years of Experience',
+            'AVERAGE_SALARY': 'Average Salary'
+        }
+    )
+    
+    fig.update_layout(
+        font_family="Times New Roman",
+        title_font_size=16,
+        yaxis=dict(tickprefix="$")
+    )
+    
+    fig.show()
+    fig.write_html(f"Salary_vs_Experience_{edu.replace(' ', '_')}.html")
+ 
+``` -->
