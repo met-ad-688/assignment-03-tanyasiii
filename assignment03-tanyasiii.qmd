@@ -86,7 +86,10 @@ df = df.fillna({
 ## compute average salary
 df = df.withColumn("Average_Salary", (col("SALARY_FROM") + col("SALARY_TO"))/2)
 
-df.select("Average_Salary", "SALARY", "EDUCATION_LEVELS_NAME", "REMOTE_TYPE_NAME", "MAX_YEARS_EXPERIENCE", "LOT_V6_SPECIALIZED_OCCUPATION_NAME").show(5, truncate=False)
+## removing null values in Employmet type column
+df = df.na.drop(subset=["EMPLOYMENT_TYPE_NAME"])
+
+# df.select("Average_Salary", "SALARY", "EDUCATION_LEVELS_NAME", "REMOTE_TYPE_NAME", "MAX_YEARS_EXPERIENCE", "LOT_V6_SPECIALIZED_OCCUPATION_NAME").show(5, truncate=False)
 
 
 ## selecting required columns & exporting data/ saving to csv
@@ -95,8 +98,15 @@ export_cols = [
   "REMOTE_TYPE_NAME",
   "MAX_YEARS_EXPERIENCE",
   "Average_Salary",
+  "SALARY_TO",
+  "SALARY_FROM",
   "SALARY",
-  "LOT_V6_SPECIALIZED_OCCUPATION_NAME"
+  "LOT_V6_SPECIALIZED_OCCUPATION_NAME",
+  "LOT_OCCUPATION_NAME",
+  "NAICS2_NAME",
+  "EMPLOYMENT_TYPE_NAME",
+  "MIN_YEARS_EXPERIENCE"
+
 ]
 
 df_selected = df.select(*export_cols)
@@ -105,6 +115,63 @@ df_selected = df.select(*export_cols)
 pdf = df_selected.toPandas()
 pdf.to_csv("lightcast_cleaned.csv", index=False)
 
+#removing random characters from these columns
+pdf["EMPLOYMENT_TYPE_NAME"] = pdf["EMPLOYMENT_TYPE_NAME"].astype(str).apply(
+    lambda x: re.sub(r"[^\x00-\x7F]+", "", x)
+)
+pdf["EDUCATION_LEVELS_NAME"] = pdf["EDUCATION_LEVELS_NAME"].astype(str).str.replace(r"[\n\r\\\"\[\]]", "", regex=True)
+print(pdf.columns.tolist())
+
 print("Data cleaning complete. Row retained:", len(pdf))
+
+```
+
+#Question 1a - Salary Distribution by Industry
+```{python}
+fig = px.box(
+  pdf,
+  x="NAICS2_NAME",
+  y="SALARY",
+  title="Salary Distribution by Industry",
+  color_discrete_sequence=["purple"],
+  points="outliers",
+)
+
+fig.update_layout(
+  font_family="Times New Roman",
+  title_font_size=16,
+  xaxis_title="Industry",
+  yaxis_title="Salary",
+  xaxis_tickangle=45,
+)
+
+fig.show()
+fig.write_html("Q1a.html")
+#fig.write_image("Q1a.png")
+
+```
+
+#Question 1b - Salary Distribution by Employment Type
+```{python}
+fig = px.box(
+  pdf,
+  x="EMPLOYMENT_TYPE_NAME",
+  y="SALARY",
+  title="Salary Distribution by Employment Type",
+  color_discrete_sequence=["orange"],
+  points="outliers",
+)
+
+fig.update_layout(
+  font_family="Times New Roman",
+  title_font_size=16,
+  xaxis_title="Employment Type",
+  yaxis_title="Salary",
+  xaxis_tickangle=45,
+)
+
+fig.show()
+fig.write_html("Q1b.html")
+#fig.write_image("Q1b.png")
 
 ```
