@@ -150,7 +150,7 @@ fig.update_layout(
 
 fig.show()
 fig.write_html("Q1a.html")
-#fig.write_image("Q1a.png")
+#fig.write_image("output/Q1a.svg", engine="kaleido")
 
 ```
 
@@ -199,7 +199,7 @@ fig.update_layout(
     xaxis_title="Industry",
     yaxis_title="Salary",
     xaxis_tickangle=45,
-    boxmode="group"  # <-- ensures grouping by employment type
+    boxmode="group"  # groups by employment type
 )
 
 fig.show()
