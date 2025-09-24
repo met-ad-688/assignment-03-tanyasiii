@@ -24,6 +24,7 @@ execute:
 
 
 #Tracy's Github Repo - https://github.com/met-ad-688/assignment-03-tanyasiii
+#Note: There are double images in the qmd but not the word doc because kaleido (no matter how many times i download it), won't covert my pictures to be shown in the word doc so i had to do it manually.
 
 # Load the dataset
 
@@ -73,7 +74,7 @@ def compute_median(sdf, col_name):
     q = sdf.approxQuantile(col_name, [0.5], 0.01)
     return q[0] if q else None
 
-median_from = compute_median(df, "SALARY_FROM")
+median_from = compute_median(df, "SALARY_FROM") #calculates median of median_from salaries column
 median_to = compute_median(df, "SALARY_TO")
 median_salary = compute_median(df, "SALARY")
 
@@ -87,7 +88,7 @@ df = df.fillna({
 })
 
 ## compute average salary
-df = df.withColumn("Average_Salary", (col("SALARY_FROM") + col("SALARY_TO"))/2)
+df = df.withColumn("Average_Salary", (col("SALARY_FROM") + col("SALARY_TO"))/2) #calculates the average
 
 ## removing null values in Employmet type column
 df = df.na.drop(subset=["EMPLOYMENT_TYPE_NAME"])
@@ -110,7 +111,7 @@ export_cols = [
   "EMPLOYMENT_TYPE_NAME",
   "MIN_YEARS_EXPERIENCE"
 
-]
+] #selects these columns to be inputted into a new csv file
 
 df_selected = df.select(*export_cols)
 
@@ -129,7 +130,7 @@ print("Data cleaning complete. Row retained:", len(pdf))
 
 ```
 
-#Question 1a - Salary Distribution by Industry
+# Question 1a - Salary Distribution by Industry
 ```{python}
 fig = px.box(
   pdf,
@@ -149,14 +150,14 @@ fig.update_layout(
 )
 
 fig.show()
-fig.write_html("Q1a.html")
-#fig.write_image("output/Q1a.svg", engine="kaleido")
+fig.write_html("Q1a.html") #makes picture in html link
 
 ```
 
+![](figures/figure1a.png)
 #Analysis: This box plot depicts how salaries vary across industries. Industries like Arts, Entertainment, and Recreation have a wider box, highlighting more variabilty in average salary, but with fewer outliers, most salaries stay within a predictable range. Unlike in Health Care and Social services, the smaller box shows consistency in typical salaries, but the presence of several outlies (above and below the median), indicate some employees make more or less than typical. It remarks on how different industries and their subsectors can affect the chances of making around average salary or not.
 
-#Question 1b - Salary Distribution by Employment Type
+# Question 1b - Salary Distribution by Employment Type
 ```{python}
 fig = px.box(
   pdf,
@@ -179,15 +180,17 @@ fig.show()
 fig.write_html("Q1b.html")
 #fig.write_image("Q1b.png")
 ```
+
+![](figures/figure1b.png)
 #Analysis: Despite all three having outliers, Full-time employees have more consistency in salary expectations than part-time employees as their hours are set while parttime might fluctate based on the needs of the business. Because of the increased variability, there is more job security and stability in full-time roles over part-time roles.
 
-
+# Question 1a and b together
 ```{python}
 fig = px.box(
     pdf,
     x="NAICS2_NAME",
     y="SALARY_FROM",
-    color="EMPLOYMENT_TYPE_NAME",
+    color="EMPLOYMENT_TYPE_NAME", #groups the naics2_names by employment type
     points="outliers",
     title="Salary Distribution by Industry and Employment Type",
     color_discrete_sequence=["purple", "orange", "green"]
@@ -206,10 +209,12 @@ fig.show()
 
 ```
 
+![](figures/figure1ab.png)
 
 #Question 2 - Salary Analysis by ONET Occupation Type
 ```{python}
 
+#calculating median for each occupation
 saonet = spark.sql("""
     SELECT
       LOT_OCCUPATION_NAME AS Occupation_Name,
@@ -266,6 +271,7 @@ fig.show()
 fig.write_html("Q2.html")
 ```
 
+![](figures/figure2.png)
 #Analysis: The chart depicts how variation in median salary and earning potential can be narrow in some occupations and widespread in others. For example Computer Systems Engineer/ Architect have the highest median salary but has a small range for salary variation, while Data/ Data Mining Analyst have a lower median salary but wider range for salary variation. 
 
 
@@ -277,11 +283,12 @@ df = df.withColumn(
   when(col("EDUCATION_LEVELS_NAME").rlike("(?i)Bachelor'?s?|Associate|GED|Highschool|No Education"), "Lower Degrees")
   .when(col("EDUCATION_LEVELS_NAME").rlike("(?i)Master'?s?|PhD|Doctorate|professional"), "Higher Degrees")
   .otherwise("Other")
-)
+) #selects these items in the education column, splits them into two groups
 
 df = df.withColumn("MAX_YEARS_EXPERIENCE", col("MAX_YEARS_EXPERIENCE").cast("float"))
 df = df.withColumn("Average_Salary", col("Average_Salary").cast("float"))
 
+# cleaning up data
 df = df.filter(
   col("MAX_YEARS_EXPERIENCE").isNotNull() &
   (col("MAX_YEARS_EXPERIENCE")>0) &
@@ -293,7 +300,7 @@ df_filtered = df.filter(col("EDU_GROUP").isin(["Lower Degrees", "Higher Degrees"
 
 df_pd = df_filtered.toPandas()
 
-# Add jitter to experience for readability
+# Add jitter readability
 np.random.seed(51)
 df_pd["Experience_Jitter"] = df_pd["MAX_YEARS_EXPERIENCE"] + np.random.uniform(-0.3, 0.3, size=len(df_pd))
 
@@ -304,7 +311,7 @@ fig = px.scatter(
   color="EDU_GROUP",
   hover_data=["LOT_V6_SPECIALIZED_OCCUPATION_NAME"],
   title="Experience VS Salary by Education Level",
-  opacity = 0.7,
+  opacity = 0.7, #how translucent each dot is
   color_discrete_sequence=["green", "red"]
 )
 
@@ -331,18 +338,11 @@ fig.show()
 fig.write_html("Q3.html")
 ```
 
+![](figures/figure3.png)
 #Analysis: Although there is a positive relationship between the years of experience (YOE) and salary for both education groups, it is evident that those with Higher degrees (Master's and PhDs) at all YOEs make more than the Lower degrees (GED, Associate, Bachelor's). This highlights how advanced education correlates to higher pay.
 
 
-#Question 4 - Salary by Remote Work type
-<!-- ```{python}
-df = pd.read_csv("lightcast_cleaned.csv")
-unique_remote_types = df["REMOTE_TYPE_NAME"].unique()
-print("Unique Remote Type entries:")
-for value in unique_remote_types:
-    print(value)
-``` -->
-
+#Question 4 - Salary by Remote Work type 
 ```{python}
 df = df.withColumn(
     "REMOTE_GROUP",
@@ -350,12 +350,13 @@ df = df.withColumn(
     .when(col("REMOTE_TYPE_NAME").rlike("(?i)^Hybrid Remote$"), "Hybrid")
     .when(col("REMOTE_TYPE_NAME").isNull() | col("REMOTE_TYPE_NAME").rlike("(?i)^Not Remote$"), "Onsite")
     .otherwise("Other")
-)
+) #selects these values from remote type name column
 
 # --- Step 2: Keep numeric columns as float & filter valid rows ---
 df = df.withColumn("MAX_YEARS_EXPERIENCE", col("MAX_YEARS_EXPERIENCE").cast("float"))
 df = df.withColumn("Average_Salary", col("Average_Salary").cast("float"))
 
+#cleaning data
 df = df.filter(
     col("MAX_YEARS_EXPERIENCE").isNotNull() &
     (col("MAX_YEARS_EXPERIENCE")>0) &
@@ -363,10 +364,9 @@ df = df.filter(
     (col("Average_Salary")>0)
 )
 
-# --- Step 3: Filter only the main three remote types ---
+# Filter only the main three remote types
 df_filtered = df.filter(col("REMOTE_GROUP").isin(["Remote", "Hybrid", "Onsite"]))
 
-# --- Step 4: Convert to Pandas ---
 df_pd = df_filtered.toPandas()
 
 
@@ -398,10 +398,11 @@ fig.show()
 fig.write_html("Q4.html")
 ```
 
+
+![](figures/figure4.png)
 #Analysis: Both Remote and Hybrid roles have good average salaries that are similar and sometimes exceed those of onsite positions, particularly in more mid level and senior roles. This shows that there is no decuction in salary from working remote, and that with more years of expereince, the roles lean towards remote expectations.
 
-
-
+#Question 4 - Salary by Remote Work type (histogram)
 ```{python}
 fig = px.histogram(
     df_pd,
@@ -431,3 +432,14 @@ fig.write_html("Q4Histogram.html")
 
 
 ```
+
+![](figures/figure4histogram.png)
+
+
+<!-- ```{python}
+df = pd.read_csv("lightcast_cleaned.csv")
+unique_remote_types = df["REMOTE_TYPE_NAME"].unique()
+print("Unique Remote Type entries:")
+for value in unique_remote_types:
+    print(value)
+``` -->
