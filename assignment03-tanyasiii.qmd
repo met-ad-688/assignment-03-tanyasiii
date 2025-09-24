@@ -8,7 +8,7 @@ author:
         city: Boston
         state: MA
 number-sections: true
-date: '2024-11-21'
+date: '2025-09-23'
 format:
   html:
     theme: cerulean
@@ -19,8 +19,11 @@ format:
 date-modified: today
 date-format: long
 execute: 
-  freeze: true
+  freeze: auto
 ---
+
+
+#Tracy's Github Repo - https://github.com/met-ad-688/assignment-03-tanyasiii
 
 # Load the dataset
 
@@ -174,7 +177,6 @@ fig.update_layout(
 fig.show()
 fig.write_html("Q1b.html")
 #fig.write_image("Q1b.png")
-
 ```
 #Analysis: 
 
@@ -273,55 +275,67 @@ fig.update_layout(
 fig.show()
 fig.write_html("Q2a.html")
 ```
+#Analysis: 
 
 
-
-
-
-
-<!-- #Question 3
+#Question 3 - Salary by Educational Level
 ```{python}
-import pandas as pd
-import plotly.express as px
 
-# Map education levels into groups
-edu_mapping = {
-    'GED': 'Associate or Lower',
-    'Associate': 'Associate or Lower',
-    'No Education Listed': 'Associate or Lower',
-    "Bachelor's": 'Bachelor',
-    "Master's": 'Master',
-    'PhD': 'PhD',
-    'Doctorate': 'PhD',
-    'Professional Degree': 'PhD'
-}
+df = df.withColumn(
+  "EDU_GROUP",
+  when(col("EDUCATION_LEVELS_NAME").rlike("(?i)Bachelor'?s?|Associate|GED|Highschool|No Education"), "Lower Degrees")
+  .when(col("EDUCATION_LEVELS_NAME").rlike("(?i)Master'?s?|PhD|Doctorate|professional"), "Higher Degrees")
+  .otherwise("Other")
+)
 
-df['EDU_GROUP'] = df['EDU_GROUP'].map(edu_mapping)
+df = df.withColumn("MAX_YEARS_EXPERIENCE", col("MAX_YEARS_EXPERIENCE").cast("float"))
+df = df.withColumn("Average_Salary", col("Average_Salary").cast("float"))
 
-# Plot scatter for each education group
-for edu in df['EDU_GROUP'].unique():
-    subset = df[df['EDU_GROUP'] == edu]
-    
-    fig = px.scatter(
-        subset,
-        x='MAX_YEARS_EXPERIENCE',
-        y='AVERAGE_SALARY',
-        color='LOT_V6_SPECIALIZED_OCCUPATION_NAME',
-        hover_data=['LOT_V6_SPECIALIZED_OCCUPATION_NAME', 'MAX_YEARS_EXPERIENCE', 'AVERAGE_SALARY'],
-        title=f'Salary vs Experience for {edu} Degrees',
-        labels={
-            'MAX_YEARS_EXPERIENCE': 'Years of Experience',
-            'AVERAGE_SALARY': 'Average Salary'
-        }
-    )
-    
-    fig.update_layout(
-        font_family="Times New Roman",
-        title_font_size=16,
-        yaxis=dict(tickprefix="$")
-    )
-    
-    fig.show()
-    fig.write_html(f"Salary_vs_Experience_{edu.replace(' ', '_')}.html")
- 
-``` -->
+df = df.filter(
+  col("MAX_YEARS_EXPERIENCE").isNotNull() &
+  (col("MAX_YEARS_EXPERIENCE")>0) &
+  col("Average_Salary").isNotNull() &
+  (col("Average_Salary")>0)
+)
+
+df_filtered = df.filter(col("EDU_GROUP").isin(["Lower Degrees", "Higher Degrees"]))
+
+df_pd = df_filtered.toPandas()
+
+fig = px.scatter(
+  df_pd,
+  x="MAX_YEARS_EXPERIENCE",
+  y="Average_Salary",
+  color="EDU_GROUP",
+  hover_data=["LOT_V6_SPECIALIZED_OCCUPATION_NAME"],
+  title="Experience VS Salary by Education Level",
+  opacity = 0.7,
+  color_discrete_sequence=["green", "red"]
+)
+
+fig.update_traces(marker=dict(size=7, line=dict(width=1, color="black")))
+
+fig.update_layout(
+  font_family="Times New Roman",
+  title_font=dict(size=20),
+  font=dict(size=16),
+  xaxis_title = "Years of Experience",
+  yaxis_title = "Average Salary($)",
+  legend_title = "Education Groups",
+  xaxis=dict(
+    gridcolor="lightblue",
+    tickmode="linear",
+    dtick=1
+  ),
+  yaxis=dict(
+    gridcolor = "lightblue"
+  )
+
+)
+fig.show()
+fig.write_html("Q3.html")
+```
+#Analysis: 
+
+
+#Question 4 - Salary by Remote Work type
